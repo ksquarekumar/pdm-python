@@ -1,0 +1,71 @@
+services:
+  redis:
+    container_name: redis-cache
+    image: redis
+    profiles:
+      - dev
+    ports:
+      - 6379:6379
+    volumes:
+      - ./dist/redis-data:/data
+    command: redis-server --appendonly yes
+
+  postgres:
+    container_name: postgres-db
+    image: postgres:latest
+    profiles:
+      - dev-pg
+    user: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - ./dist/postgres-data:/var/lib/postgresql
+      - ./dist/postgres-config:/etc/postgresql
+    environment:
+      - POSTGRES_DB=local
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+
+  local-service:
+    container_name: local-service
+    restart: no
+    runtime: nvidia
+    privileged: true
+    user: app
+    ipc: host
+    network_mode: host
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_STAGE: prod
+        DEBUG: "False"
+        LOG_LEVEL: INFO
+        PORT: "8080"
+    command: >
+      "/opt/venv/bin/python" "-m" "pdm_python"
+    expose:
+      - "8080"
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./src/pdm_python/:/code/src/pdm_python/:ro
+      - ./dist/logs:/code/logs
+      - ./dist/.cache:/code/.cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, utility, compute]
+
+volumes:
+  dist:

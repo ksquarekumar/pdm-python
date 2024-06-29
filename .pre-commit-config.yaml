@@ -1,0 +1,179 @@
+default_stages:
+  - "commit"
+fail_fast: false
+repos:
+  - hooks:
+      - id: identity
+        always_run: true
+    repo: meta
+  - hooks:
+      - id: check-yaml
+        args:
+          - --unsafe
+      - id: check-toml
+      - id: check-json
+        exclude: "^.vscode/launch.json$"
+      - id: check-ast
+      - id: end-of-file-fixer
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: fix-byte-order-marker
+      - id: trailing-whitespace
+      - id: check-added-large-files
+        args: [--maxkb=100]
+        exclude: ^(.*/)?.*.lock$
+      - id: detect-aws-credentials
+        args: [--allow-missing-credentials]
+        verbose: true
+        # detect-aws-credentials can't handle false positives.
+      - id: detect-private-key
+      - id: check-executables-have-shebangs
+        types: [shell, python, javascript]
+      - id: mixed-line-ending
+      - id: debug-statements
+    repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+  - hooks:
+      - id: prettier
+        name: Format yaml, json, toml, markdown, bash, and shell files with prettier
+        additional_dependencies:
+          - prettier@3.0.3
+          - prettier-plugin-sh@0.13.1
+          - prettier-plugin-toml@1.0.0
+        types_or:
+          - yaml
+          - json
+          - toml
+          - markdown
+          - bash
+          - shell
+        pass_filenames: true
+        exclude: ^docs/openapi-docs\.json$
+    repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+  - hooks:
+      - id: format
+        name: Format Python Files
+        entry: nox -s black
+        language: system
+        types: [python]
+        args: ["--"]
+        require_serial: true
+      - id: lint
+        name: Ruff Lint Python Files
+        entry: nox -s ruff
+        language: system
+        args: ["--"]
+        types: [python]
+        require_serial: true
+      - id: mypy
+        name: Static Type Checking with Mypy
+        entry: nox -s mypy
+        args:
+          - "--"
+          - ./src/pdm_python
+          - ./tests
+          - ./noxfile.py
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: format-notebooks
+        name: Format Notebooks
+        entry: nox -s notebook_format
+        language: system
+        types: [jupyter]
+        files: '\.(ipynb)$'
+      - id: lint-notebooks
+        name: Ruff Lint Notebooks
+        entry: nox -s notebook_lint
+        language: system
+        types: [jupyter]
+        files: '\.(ipynb)$'
+      - id: tests
+        name: Run Tests
+        entry: make tests
+        verbose: true
+        language: system
+        types: [python]
+        files: "^(tests)/.*"
+        pass_filenames: false
+    repo: local
+  - hooks:
+      - args:
+          - --ignore
+          - DL3008
+        id: hadolint-docker
+    repo: https://github.com/hadolint/hadolint
+    rev: v2.13.0-beta
+  - hooks:
+      - id: commitizen
+        stages:
+          - commit-msg
+    repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.27.0
+  - hooks:
+      - id: pdm-lock
+        language: system
+        name: Sync `pdm` lock for `root` `pyproject`
+        stages: [manual]
+        pass_filenames: false
+        args: ["-G:all"]
+        entry: pdm update
+        files: ^pyproject\.toml$
+      - id: pdm-sync
+        language: system
+        name: Export pdm lock file to requirements.txt for `root` `pyproject`
+        stages: [manual]
+        pass_filenames: false
+        entry: pdm export
+        files: ^pyproject\.toml$
+        args:
+          [
+            "--without-hashes",
+            "--format",
+            "requirements.txt",
+            "--prod",
+            "-o",
+            "requirements.txt",
+          ]
+      - id: check-vulnerabilities
+        language: system
+        name: Check for vulnerabilities in dependencies
+        entry: nox
+        args: ["-s", "ochrona", "--", "-r", "requirements.txt"]
+        pass_filenames: false
+        files: ^(pyproject.toml)|(requirements\.txt)$
+    repo: local
+  - hooks:
+      - id: detect-secrets
+        args:
+          - --baseline
+          - .secrets.baseline
+        exclude: ^.*\.lock$
+    repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+  - hooks:
+      - id: shellcheck
+        types_or: ["bash", "shell"]
+        args:
+          - --severity=warning
+    repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+  - hooks:
+      - id: actionlint
+        name: Check GitHub Actions
+        stages: [manual, push]
+        files: ^\.github/workflows/.*\.ya?ml$
+        pass_filenames: true
+        args: ["-shellcheck="]
+    repo: https://github.com/rhysd/actionlint
+    rev: v1.7.1
+  - hooks:
+      - id: cspell
+        args:
+          - --config
+          - ./cspell.config.yaml
+        require_serial: true
+        pass_filenames: true
+    repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v8.9.0

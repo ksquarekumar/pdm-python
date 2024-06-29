@@ -1,0 +1,22 @@
+version: "0.2"
+ignorePaths: ["./custom-words.txt"]
+dictionaryDefinitions:
+  [{ name: customWords, path: "./.customWords.txt", addWords: true }]
+dictionaries:
+  - en_US
+  - "!en_GB"
+  - companies
+  - softwareTerms
+  - node
+  - typescript
+  - python
+  - html
+  - css
+  - filetypes
+  - customWords
+words: []
+ignoreWords: []
+import: []
+caseSensitive: true
+languageSettings:
+  - languageId: python

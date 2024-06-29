@@ -1,0 +1,16 @@
+debug: false
+silent: false
+exclude_dir:
+  - .venv
+  - .vscode
+  - .github
+  - .git
+  - tests
+report_type: JSON
+report_location: ./.reports
+ignore: requests
+include_dev: false
+color_output: true
+enable_sast: false
+sbom: false
+sbom_format: JSON

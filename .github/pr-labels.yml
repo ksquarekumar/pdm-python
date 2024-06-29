@@ -1,0 +1,42 @@
+---
+# Label mappings for PRs
+# Uses labels defined in .github/repo-labels.yml
+# with branch name patterns defined in .github/workflows/pre-validate.yml
+# Ref: https://github.com/marketplace/actions/pr-labeler
+bug:
+  - "fix/*"
+fix:
+  - "fix/*"
+build:
+  - "build/*"
+ci:
+  - "ci/*"
+dependencies:
+  - "deps/*"
+docs:
+  - "docs/*"
+enhancement:
+  - "feat/*"
+  - "refactor/*"
+  - "perf/*"
+github_actions:
+  - "ci/*"
+perf:
+  - "perf/*"
+python:
+  - "deps/*"
+refactor:
+  - "refactor/*"
+removal:
+  - "revert/*"
+style:
+  - "style/*"
+test:
+  - "test/*"
+dependabot:
+  - "dependabot/*"
+chore:
+  - "chore/*"
+  - "deps/*"
+  - "revert/*"
+  - "test/*"

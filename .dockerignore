@@ -1,0 +1,21 @@
+# Exclude everything except the Dockerfile
+*
+
+# Add only the necessary files
+!Dockerfile
+!src/pdm_python
+!README.md
+!pyproject.toml
+!pdm.lock
+!launch.py
+!requirements.txt
+
+# Exclude known
+src/**/__pycache__
+src/**/.pytest_cache
+src/**/.mypy_cache
+src/**/.vscode
+src/**/.git
+src/**/.idea
+src/**/.vscode
+src/**/*.pyc

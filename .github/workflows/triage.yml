@@ -1,0 +1,89 @@
+name: Triage
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+concurrency:
+  group: triage-${{ github.head_ref }}-1
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  statuses: write
+  repository-projects: write
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    if: "! (startsWith(github.ref_name, 'dependabot/') || startsWith(github.ref_name, 'Chore(deps)'))" # Ignore dependabot branches
+    steps:
+      - name: Check out the repository
+        id: checkout
+        uses: actions/checkout@v4.1.7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate PR title
+        id: validate-title
+        uses: amannn/action-semantic-pull-request@v5.5.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Configure which types are allowed (newline delimited).
+          # Default: https://github.com/commitizen/conventional-commit-types
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+            deps
+            dependabot
+          # If the PR only contains a single commit, the action will validate that
+          # it matches the configured pattern.
+          validateSingleCommit: true
+          # For work-in-progress PRs you can typically use draft pull requests
+          # from GitHub. However, private repositories on the free plan don't have
+          # this option and therefore this action allows you to opt in to using the
+          # special "[WIP]" prefix to indicate this state. This will avoid the
+          # validation of the PR title and the pull request checks remain pending.
+          # Note that a second check will be reported if this is enabled.
+          wip: true
+          # Configure additional validation for the subject based on a regex.
+          # This example ensures the subject doesn't start with an uppercase character.
+          # subjectPattern: ^([A-Z]{2}[-0-9]+\s)(?![A-Z0-9]).+$
+          # # If `subjectPattern` is configured, you can use this property to override
+          # # the default error message that is shown when the pattern doesn't match.
+          # # The variables `subject` and `title` can be used within the message.
+          # subjectPatternError: |
+          #   The subject "{subject}" found in the pull request title "{title}"
+          #   didn't match the configured pattern.
+          #   The regex pattern is "^([A-Z]{2}[-0-9]+\s)(?![A-Z0-9]).+$" and,
+          #   enforces use of a Jira ticket number followed by a lowercase subject.
+          #   For example, a valid subject would be "LA-1234 fix something".
+
+      - name: Label PR
+        id: label-pr
+        uses: TimonVS/pr-labeler-action@v5.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/pr-labels.yml
+
+      - name: Assign PR
+        id: assign-pr
+        uses: samspills/assign-pr-to-author@v1.0.2
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Assess Pull Request Size
+        uses: tpbowden/chonkbot@v1.1.6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,9 @@
+{
+  "target": {
+    "service-name": {
+      "cache-from": ["type=registry,ref=ghcr.io/ksquarekumar/pdm-python:cache"],
+      "cache-to": ["type=registry,ref=ghcr.io/ksquarekumar/pdm-python:cache"],
+      "output": ["type=docker"]
+    }
+  }
+}

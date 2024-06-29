@@ -1,0 +1,4 @@
+[venv]
+backend = "virtualenv"
+in_project = true
+location = "./.venv"

@@ -34,7 +34,6 @@ services:
   local-service:
     container_name: local-service
     restart: no
-    runtime: nvidia
     privileged: true
     user: app
     ipc: host
@@ -59,13 +58,6 @@ services:
       - ./src/pdm_python/:/code/src/pdm_python/:ro
       - ./dist/logs:/code/logs
       - ./dist/.cache:/code/.cache
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu, utility, compute]
 
 volumes:
   dist:

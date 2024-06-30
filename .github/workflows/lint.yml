@@ -18,11 +18,15 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     if: "! (startsWith(github.ref_name, 'dependabot/') || startsWith(github.ref_name, 'Chore(deps)'))" # Ignore dependabot branches
+    strategy:
+      matrix:
+        python-version: [3.11]
+        session: [precommit, tests]
 
     env:
       PYTHONUNBUFFERED: "1"
       PYTHONIOENCODING: "UTF-8"
-      PYTHON_VERSION: "3.12"
+      PYTHON_VERSION: ${{ matrix.python-version }}
 
       FORCE_COLOR: "1"
       PRE_COMMIT_COLOR: "always"
@@ -30,14 +34,17 @@ jobs:
 
     steps:
       - name: Set up QEMU
+        if: matrix.session == 'tests'
         id: setup-qemu
         uses: docker/setup-qemu-action@v3.0.0
 
       - name: Set up Docker Buildx
+        if: matrix.session == 'tests'
         id: setup-buildx
         uses: docker/setup-buildx-action@v3.3.0
 
       - name: Login to Docker Registry
+        if: matrix.session == 'tests'
         uses: docker/login-action@v3.2.0
         with:
           registry: ghcr.io
@@ -51,6 +58,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build docker-compose
+        if: matrix.session == 'tests'
         env:
           AWS_ACCESS_KEY_ID: "minio" # pragma: allowlist-secret
           AWS_SECRET_ACCESS_KEY: "minio123" # pragma: allowlist-secret
@@ -68,7 +76,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5.1.0
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ matrix.python-version }}
           cache: "pip"
 
       - run: |
@@ -79,11 +87,15 @@ jobs:
       - name: Set up PDM
         uses: pdm-project/setup-pdm@v4.1
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ matrix.python-version }}
           cache: true
           cache-dependency-path: |
             ./pdm.lock
             ./pdm.new.lock
+
+      - name: Install dependencies
+        run: |
+          pdm install -G:all --without=jupyter
 
       - name: cache pre-commit
         id: cache-pre-commit
@@ -92,15 +104,15 @@ jobs:
           path: ~/.cache/pre-commit/
           key: pre-commit-|${{ env.PYTHON_VERSION }}|${{ hashFiles('.pre-commit-config.yaml') }}
 
-      - name: Install dependencies
-        run: |
-          pdm sync -d -G:all --without=jupyter
-
       - name: Install pre-commit
         id: install-pre-commit
         if: steps.cache-pre-commit.outputs.cache-hit != 'true'
-        run: pre-commit install
+        run: pdm run pre-commit install
 
-      - name: Run pre-commit
-        id: run-pre-commit
-        run: make lint-all
+      - name: Run Pre-commit
+        if: matrix.session == 'precommit'
+        run: pdm run nox -s ${{ matrix.session }}
+
+      - name: Run Tests
+        if: matrix.session == 'tests'
+        run: pdm run nox -s tests -- ./tests

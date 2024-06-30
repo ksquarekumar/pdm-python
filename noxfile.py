@@ -243,7 +243,7 @@ def ochrona(session: Session) -> None:
         session.log(f"Creating reports directory at {reports_directory}")
         reports_directory.mkdir(
             parents=True,
-            if_exists=False,
+            exist_ok=False,
             mode=0o755,
         )
     else:
@@ -252,7 +252,7 @@ def ochrona(session: Session) -> None:
     session.run(*PDM_ARGS, "ochrona", *session.posargs)
 
 
-@session(name="pre-commit", python=False)
+@session(name="precommit", python=False)
 def precommit(session: Session) -> None:
     """Lint using pre-commit."""
     args: list[str] = session.posargs or [

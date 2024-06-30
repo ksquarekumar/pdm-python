@@ -123,16 +123,15 @@ repos:
       - id: pdm-sync
         language: system
         name: Export pdm lock file to requirements.txt for `root` `pyproject`
-        stages: [manual]
         pass_filenames: false
         entry: pdm export
         files: ^pyproject\.toml$
         args:
           [
+            "--prod",
             "--without-hashes",
             "--format",
-            "requirements.txt",
-            "--prod",
+            "requirements",
             "-o",
             "requirements.txt",
           ]

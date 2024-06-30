@@ -47,12 +47,15 @@ precommit = [
   "nox",
   "ochrona>=2.0.0",
   "detect-secrets",
-  "pyclean"
+  "pyclean",
+  "pre-commit",
+  "pre-commit-hooks",
 ]
 lint = [
   "black >= 21.12b0",
   "isort >= 5.10.1",
   "ruff >= 0.1.0",
+  "pyright >= 0.0.1",
   "mypy[mypyc] >= 1.10.0",
   "codespell >= 2.3.0",
 ]

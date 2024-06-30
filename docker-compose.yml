@@ -34,7 +34,6 @@ services:
   local-service:
     container_name: local-service
     restart: no
-    runtime: nvidia
     privileged: true
     user: app
     ipc: host
@@ -54,18 +53,11 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - .env
+      - .test.env
     volumes:
       - ./src/pdm_python/:/code/src/pdm_python/:ro
       - ./dist/logs:/code/logs
       - ./dist/.cache:/code/.cache
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu, utility, compute]
 
 volumes:
   dist:

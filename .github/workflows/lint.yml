@@ -41,7 +41,7 @@ jobs:
       - name: Set up Docker Buildx
         if: matrix.session == 'tests'
         id: setup-buildx
-        uses: docker/setup-buildx-action@v3.3.0
+        uses: docker/setup-buildx-action@v3.6.1
 
       - name: Login to Docker Registry
         if: matrix.session == 'tests'

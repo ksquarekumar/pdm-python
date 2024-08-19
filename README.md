@@ -18,36 +18,38 @@
 ## Installation
 
 ```shell
-make install-all
-make setup-hooks
+make venv # Creates a virtual environment
+make install-all # Installs all dependencies
+make setup-hooks # Setup pre-commit hooks
 ```
 
 ## Updating Project & Dependencies
 
 ```shell
-make upgrade
+make upgrade # Upgrades the project and dependencies
+make lock # Updates the project dependencies only
 ```
 
 ## Updating Requirements Only
 
 ```shell
-make export
+make pip-export # Exports the project dependencies to requirements.txt
 ```
 
 ## Updating Project Dependencies Only
 
 ```shell
-make lock
+make lock # Updates the project dependencies only
 ```
 
 ## Linting
 
 ```shell
-make lint-all
+make lint-all # Runs all linters
 ```
 
 ## Running Tests
 
 ```shell
-make tests
+make tests # Runs all tests
 ```

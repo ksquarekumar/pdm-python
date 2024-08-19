@@ -23,7 +23,7 @@ authors = [
 ]
 maintainers = [{ email = 'ksquarekumar@gmail.com', name = 'Krishna Kumar' }]
 
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "importlib_metadata",
     "litestar[standard]>=0.1.0",
@@ -166,7 +166,7 @@ line-length = 88
 [tool.ruff]
 fix = true
 cache-dir = ".ruff_cache"
-target-version = "py311"
+target-version = "py312"
 respect-gitignore = true
 src = ['src/pdm_python', 'tests']
 extend-include = ["*.ipynb"]

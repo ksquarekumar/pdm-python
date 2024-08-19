@@ -110,7 +110,7 @@ repos:
         stages:
           - commit-msg
     repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.27.0
+    rev: v3.29.0
   - hooks:
       - id: pdm-lock
         language: system
@@ -175,4 +175,4 @@ repos:
         require_serial: true
         pass_filenames: true
     repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: v8.9.0
+    rev: v8.13.3

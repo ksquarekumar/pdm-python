@@ -1,5 +1,15 @@
 version: "0.2"
-ignorePaths: ["./custom-words.txt"]
+ignorePaths:
+  [
+    "./customWords.txt",
+    "./.github/**/*.yml",
+    "./secrets.baseline",
+    "./*.env",
+    "./*.lock",
+    "./*.toml",
+    "./.gitignore",
+    "./.gitattributes",
+  ]
 dictionaryDefinitions:
   [{ name: customWords, path: "./.customWords.txt", addWords: true }]
 dictionaries:

@@ -4,10 +4,8 @@ addopts
 bindir
 bindirs
 buildx
-bfdadc
 celerybeat
 codespell
-Connor
 cythonize
 dotenv
 eeef
@@ -34,8 +32,6 @@ pylib
 pytype
 pixi
 pypa
-samspills
-tpbowden
 wontfix
 xdist
 GITHUB

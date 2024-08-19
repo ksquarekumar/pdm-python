@@ -1,14 +1,19 @@
 # UNPACK ARGS TO EXCLUDE THE FIRST ARGUMENT
 ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 PDM := $(shell pdm --version 2>/dev/null)
+PYTHON_VERSION := "3.12"
 
-.PHONY: pdm install-all upgrade setup-hooks lint-all export install-prod format lint-py mypy
+.PHONY: pdm activate install-all upgrade lock setup-hooks pip-export install-prod lint-all tests
 
 pdm:
 ifndef PDM
     $(error "PDM is not available please install PDM from 'https://pdm-project.org/en/latest'")
 endif
 
+
+venv:
+	@echo "Creating virtual environment"
+	@pdm venv create $(PYTHON_VERSION)
 
 activate: pdm
 	@echo "Activating virtual environment"
@@ -34,7 +39,7 @@ setup-hooks: pdm activate
 	@echo "Setting up pre-commit hooks"
 	@eval pdm run pre-commit install --install-hooks
 
-export: pdm activate
+pip-export: pdm activate
 	@echo "Exporting dependencies"
 	@eval pdm export --prod --without-hashes -f requirements -o requirements.txt
 

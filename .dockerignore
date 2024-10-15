@@ -2,11 +2,13 @@
 *
 
 # Add only the necessary files
-!Dockerfile
 !src/pdm_python
 !README.md
+!LICENSE
 !pyproject.toml
+!pdm.toml
 !pdm.lock
+!uv.lock
 !launch.py
 !requirements.txt
 

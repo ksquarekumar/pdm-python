@@ -9,17 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository == 'ksquarekumar/pdm-python' }}
     steps:
-      - uses: actions/checkout@v4.1.7
+      - uses: actions/checkout@v4.2.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python
-        uses: actions/setup-python@v5.1.1
+        uses: actions/setup-python@v5.2.0
       - name: Install pre-commit
         run: pip install pre-commit
       - name: Run pre-commit autoupdate
         run: pre-commit autoupdate
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6.1.0
+        uses: peter-evans/create-pull-request@v7.0.5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: update/pre-commit-autoupdate

@@ -1,6 +1,6 @@
 default_stages:
-  - "commit"
-fail_fast: false
+  - "pre-commit"
+fail_fast: true
 repos:
   - hooks:
       - id: identity
@@ -21,7 +21,7 @@ repos:
       - id: trailing-whitespace
       - id: check-added-large-files
         args: [--maxkb=100]
-        exclude: ^(.*/)?.*.lock$
+        exclude: ^(data/.*)|((?:.*/)?.*.lock)$
       - id: detect-aws-credentials
         args: [--allow-missing-credentials]
         verbose: true
@@ -32,14 +32,14 @@ repos:
       - id: mixed-line-ending
       - id: debug-statements
     repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
   - hooks:
       - id: prettier
         name: Format yaml, json, toml, markdown, bash, and shell files with prettier
         additional_dependencies:
-          - prettier@3.0.3
-          - prettier-plugin-sh@0.13.1
-          - prettier-plugin-toml@1.0.0
+          - prettier@3.3.3
+          - prettier-plugin-sh@0.14.0
+          - prettier-plugin-toml@2.0.1
         types_or:
           - yaml
           - json
@@ -71,7 +71,7 @@ repos:
         entry: nox -s mypy
         args:
           - "--"
-          - ./src/pdm_python
+          - ./src
           - ./tests
           - ./noxfile.py
         language: system
@@ -104,13 +104,13 @@ repos:
           - DL3008
         id: hadolint-docker
     repo: https://github.com/hadolint/hadolint
-    rev: v2.13.0-beta
+    rev: v2.13.1-beta
   - hooks:
       - id: commitizen
         stages:
           - commit-msg
     repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.29.0
+    rev: v3.29.1
   - hooks:
       - id: pdm-lock
         language: system
@@ -120,21 +120,13 @@ repos:
         args: ["-G:all"]
         entry: pdm update
         files: ^pyproject\.toml$
-      - id: pdm-sync
+      - id: pdm-export
         language: system
-        name: Export pdm lock file to requirements.txt for `root` `pyproject`
+        name: Export requirements.txt from `pdm` lock for `root` `pyproject`
+        stages: [pre-commit]
         pass_filenames: false
-        entry: pdm export
+        entry: pdm run export
         files: ^pyproject\.toml$
-        args:
-          [
-            "--prod",
-            "--without-hashes",
-            "--format",
-            "requirements",
-            "-o",
-            "requirements.txt",
-          ]
       - id: check-vulnerabilities
         language: system
         name: Check for vulnerabilities in dependencies
@@ -161,12 +153,12 @@ repos:
   - hooks:
       - id: actionlint
         name: Check GitHub Actions
-        stages: [manual, push]
+        stages: [manual, pre-push]
         files: ^\.github/workflows/.*\.ya?ml$
         pass_filenames: true
         args: ["-shellcheck="]
     repo: https://github.com/rhysd/actionlint
-    rev: v1.7.1
+    rev: v1.7.3
   - hooks:
       - id: cspell
         args:
@@ -174,5 +166,6 @@ repos:
           - ./cspell.config.yaml
         require_serial: true
         pass_filenames: true
+        verbose: true
     repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: v8.13.3
+    rev: v8.15.1

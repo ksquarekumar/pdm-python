@@ -7,13 +7,14 @@
     "**/.DS_Store": true,
     "**/Thumbs.db": true
   },
-  "hide-files.files": [],
-  "cSpell.words": [
-    "litestar",
-    "MYPYPATH",
-    "noxfile",
-    "ochrona",
-    "uvicorn",
-    "webui"
-  ]
+  "hide-files.files": [".venv"],
+  "python.analysis.extraPaths": ["src/**", "**/.venv"],
+  "python.analysis.include": ["src/**", "*.py"],
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportOperatorIssue": "warning",
+    "reportSelfClsParameterName": "warning"
+  },
+  "mypy-type-checker.importStrategy": "fromEnvironment",
+  "mypy-type-checker.interpreter": ["${workspaceFolder}/.venv/bin/python3"],
+  "mypy-type-checker.preferDaemon": true
 }

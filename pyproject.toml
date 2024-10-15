@@ -1,11 +1,17 @@
+[tool.pdm]
+distribution = true
+version = { source = "file", path = "./src/pdm_python/__init__.py" }
+
 [project]
 name = "pdm-python"
-dynamic = ["version"]
+dynamic = [
+  "version",
+]
 description = 'A Simple Project meant to be forked and used as a template for creating new Python Packages'
 readme = "README.md"
 classifiers = [
   'Programming Language :: Python :: 3',
-  'Programming Language :: Python :: 3.11',
+  'Programming Language :: Python :: 3.12',
   'Operating System :: POSIX :: Linux',
   'Operating System :: MacOS',
   'Natural Language :: English',
@@ -15,97 +21,141 @@ classifiers = [
   'Topic :: Software Development :: Libraries',
   'Typing :: Typed',
 ]
-keywords = ['machine learning', 'frontend', 'llm']
-license = {text = "MIT"}
-authors = [
-    { email = 'ksquarekumar@gmail.com', name = 'Krishna Kumar' },
-    {name = "ksquarekumar", email = "ksquarekumar@gmail.com"},
+keywords = [
+  'python',
+  'template',
 ]
-maintainers = [{ email = 'ksquarekumar@gmail.com', name = 'Krishna Kumar' }]
+license = { text = "MIT" }
+authors = [
+  { email = 'ksquarekumar@gmail.com', name = 'Krishna Kumar' },
+  { name = "ksquarekumar", email = "ksquarekumar@gmail.com" },
+]
+maintainers = [
+  { email = 'ksquarekumar@gmail.com', name = 'Krishna Kumar' },
+]
 
 requires-python = ">=3.12"
 dependencies = [
-    "importlib_metadata",
-    "litestar[standard]>=0.1.0",
-    "pydantic[email]>=2.7.1",
-    "pydantic-settings>2.2.0",
-    "orjson>=3.10.3",
-    "structlog>=24.1.0",
-    "joblib>=1.4.2",
-    "python-dotenv>=1.0.1",
-    "psutil>=5.9.8",
-    "uvicorn[standard]>=0.29.0",
-    "uvloop>=0.19.0",
+  "h11>=0.14.0",
+  "httpx>=0.27.2",
+  "importlib_metadata",
+  "joblib>=1.4.2",
+  "litestar[standard]>=2.12.1",
+  "orjson>=3.10.7",
+  "psutil>=6.0.0",
+  "pydantic-settings",
+  "pydantic[email]>=2.9.2",
+  "python-dotenv>=1.0.1",
+  "structlog>=24.4.0",
+  "uvicorn[standard]>=0.31.1",
+  "uvloop>=0.20.0",
 ]
-
-[tool.pdm]
-distribution = true
-version = { source = "file", path = "./src/pdm_python/__init__.py" }
 
 [tool.pdm.dev-dependencies]
 precommit = [
+  "detect-secrets",
+  "joblib",
   "nox",
   "ochrona>=2.0.0",
-  "detect-secrets",
-  "pyclean",
-  "pre-commit",
   "pre-commit-hooks",
+  "pre-commit",
+  "pyclean",
+]
+dev = [
+  "pyinstrument~=4.7.3",
+  "pip~=24.2.0",
 ]
 lint = [
-  "black >= 21.12b0",
-  "isort >= 5.10.1",
-  "ruff >= 0.1.0",
-  "pyright >= 0.0.1",
-  "mypy[mypyc] >= 1.10.0",
+  "black >= 24.8.0",
   "codespell >= 2.3.0",
+  "isort >= 5.13.2",
+  "mypy >= 1.11.2",
+  "pyright >= 1.1.383",
+  "ruff >= 0.6.9",
 ]
 build = [
-  "cython >= 3.0.10",
-  "setuptools",
+  "cython >= 3.0.11",
   "python-build",
   "setuptools-cythonize",
+  "setuptools",
 ]
 jupyter = [
-  "jupyter",
-  "ipython",
-  "ipykernel",
-  "notebook",
-  "jupyterlab",
-  "ipywidgets",
   "debugpy",
+  "ipykernel",
+  "ipython",
+  "ipywidgets",
+  "jupyter",
+  "jupyterlab",
   "nbqa[toolchain,ruff,black]",
+  "notebook",
 ]
 types = [
+  "types-cachetools",
+  "types-decorator",
+  "types-protobuf",
+  "types-pycurl",
+  "types-pyOpenSSL",
+  "types-PyYAML",
   "types-requests",
-  "types-PyYAML"
+  "types-simplejson",
+  "types-six",
+  "types-toml",
+  "types-tqdm",
+  "types-ujson",
+  "types-urllib3",
+  "typing-extensions>=4.12.2",
 ]
 tests = [
-  "pytest >= 7.4.2",
-  "coverage >= 7.4.1",
-  "pytest-randomly",
+  "coverage >= 7.6.1",
+  "hypothesis",
+  "pytest >= 8.3.3",
+  "pytest-cov",
+  "pytest-icdiff",
   "pytest-mock",
+  "pytest-randomly",
   "pytest-rerunfailures",
   "pytest-sugar",
-  "pytest-icdiff",
-  "hypothesis",
-  "pytest-xdist[psutils]",
-  "pytest-cov",
 ]
 
 [project.urls]
 Homepage = "https://github.com/ksquarekumar/pdm-python"
 Issues = "https://github.com/ksquarekumar/pdm-python/issues"
 
+[tool.pdm.scripts]
+lint = "nox -s precommit"
+format = "black src tests"
+tests = "nox -s tests -- ./tests"
+container_tests = "nox -s container_tests"
+# LOCK
+lock = "pdm lock -G:all --strategy inherit_metadata"
+# PACKAGE-SPECIFIC
+version = "python -m pdm_python"
+# EXPORT
+export = "pdm export --prod --without-hashes --editable-self --format=requirements -o requirements.txt"
+# BUILD
+build = "pdm build -p ./src/pdm_python --dest ../../build/ --no-clean"
+# SCRIPTS
+start = "python pdm_python"
+
 [tool.pytest.ini_options]
 minversion = 7.0
-addopts = ['--strict-markers', '--strict-config', '-l', '--color=yes']
+addopts = [
+  '--strict-markers',
+  '--strict-config',
+  '-l',
+  '--color=yes',
+]
 xfail_strict = true
-markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
 console_output_style = 'progress-even-when-capture-no'
 
 [tool.coverage.run]
 cover_pylib = false
-concurrency = ['thread']
+concurrency = [
+  'thread',
+]
 data_file = '.coverage'
 disable_warnings = [
   'trace-changed',
@@ -115,8 +165,15 @@ disable_warnings = [
   'module-not-measured',
   'include-ignored',
 ]
-source = ['src/pdm_python']
-omit = ['.venv/*', '.nox*', './docs/**/*', './.github/**/*']
+source = [
+  'src/pdm_python',
+]
+omit = [
+  '.venv/*',
+  '.nox*',
+  './docs/**/*',
+  './.github/**/*',
+]
 parallel = true
 timid = false
 
@@ -147,18 +204,18 @@ exclude_lines = [
   'if (typing\.)?TYPE_CHECKING:',
   '@overload',
   # Don't complain about ellipsis (exception classes, typing overloads etc):
-  '\.\.\.'
+  '\.\.\.',
 ]
 
 [tool.coverage.html]
 show_contexts = true
 skip_covered = true
 skip_empty = true
-directory='./.htmlcov'
+directory = './.htmlcov'
 
 [tool.coverage.xml]
-output='coverage.xml'
-package_depth=99
+output = 'coverage.xml'
+package_depth = 99
 
 [tool.black]
 line-length = 88
@@ -168,30 +225,37 @@ fix = true
 cache-dir = ".ruff_cache"
 target-version = "py312"
 respect-gitignore = true
-src = ['src/pdm_python', 'tests']
-extend-include = ["*.ipynb"]
+src = [
+  'src/pdm_python',
+  'tests',
+]
+extend-include = [
+  "*.ipynb",
+]
 exclude = [
-    ".eggs",
-    ".git",
-    ".git-rewrite",
-    ".mypy_cache",
-    ".nox",
-    ".pytype",
-    ".ruff_cache",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "__pycache__",
-    "_build",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
-    ".venv"
+  ".eggs",
+  ".git",
+  ".git-rewrite",
+  ".mypy_cache",
+  ".nox",
+  ".pytype",
+  ".ruff_cache",
+  ".tox",
+  ".venv",
+  "__pypackages__",
+  "__pycache__",
+  "_build",
+  "build",
+  "dist",
+  "node_modules",
+  "venv",
+  ".venv",
 ]
 line-length = 88
 
-lint.select = ["ALL"]
+lint.select = [
+  "ALL",
+]
 lint.ignore = [
   "D100",
   "D101",
@@ -221,7 +285,7 @@ lint.ignore = [
   "EXE002",
   "FIX002",
   "N818",
-  "I002" # breaks forward references
+  "I002",    # breaks forward references
 ]
 lint.unfixable = [
   "T10",
@@ -238,13 +302,16 @@ lint.unfixable = [
   "PLC",
   "PLR",
   "PLW",
-  "UP"
+  "UP",
 ]
 lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.lint.flake8-bugbear]
 # Allow default arguments like, e.g., `data: List[str] = fastapi.Query(None)`.
-extend-immutable-calls = ['fastapi.Depends', 'fastapi.Query']
+extend-immutable-calls = [
+  'fastapi.Depends',
+  'fastapi.Query',
+]
 
 [tool.ruff.lint.flake8-tidy-imports]
 # Disallow all relative imports.
@@ -254,7 +321,6 @@ ban-relative-imports = 'all'
 "typing.TypedDict".msg = "Use typing_extensions.TypedDict instead."
 
 [tool.ruff.lint.per-file-ignores]
-
 
 [tool.ruff.lint.pydocstyle]
 # Accepts: "google", "numpy", or "pep257".
@@ -268,25 +334,34 @@ max-complexity = 10
 force-wrap-aliases = true
 combine-as-imports = true
 force-sort-within-sections = true
-forced-separate = ['tests']
+forced-separate = [
+  'tests',
+]
 lines-after-imports = 2
-no-lines-before = ["future", "standard-library"]
+no-lines-before = [
+  "future",
+  "standard-library",
+]
 relative-imports-order = "furthest-to-closest"
-single-line-exclusions = ["os", "sys"]
+single-line-exclusions = [
+  "os",
+  "sys",
+]
 
 [tool.codespell]
 count = true
 quiet-level = 3
 
 [tool.mypy]
-namespace_packages = true
+namespace_packages = false
 strict = true
 ignore_missing_imports = true
 warn_unreachable = true
 pretty = true
 follow_imports = 'normal'
 exclude = [
-  'stubs',
+  './stubs',
+  './typings',
 ]
 # Know exactly what you're doing
 show_column_numbers = true
@@ -300,7 +375,7 @@ show_absolute_path = true
 disallow_untyped_calls = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
-disallow_untyped_decorators = true
+disallow_untyped_decorators = false
 check_untyped_defs = true
 # Restrict dynamic typing
 disallow_any_decorated = false
@@ -311,6 +386,7 @@ warn_return_any = true
 strict_equality = true
 strict_optional = true
 no_implicit_optional = true
+disable_error_code = "valid-type"
 
 # It's hard to make tests compliant using unittest.mock
 [[tool.mypy.overrides]]
@@ -332,19 +408,26 @@ disallow_untyped_decorators = false
 warn_return_any = false
 
 [tool.pyright]
-include = ['src/pdm_python', 'tests']
-exclude = ['**/.venv', '**/__pycache__', '**/stubs']
+include = [
+  'src',
+  'tests',
+]
+exclude = [
+  '**/.venv',
+  '**/__pycache__',
+  '**/stubs',
+]
 stubPath = './stubs'
 useLibraryCodeForTypes = true
 
-[tool.pdm.scripts]
-start = "python pdm_python"
-
-
 [build-system]
-requires = ["pdm-backend"]
+requires = [
+  "pdm-backend",
+]
 build-backend = "pdm.backend"
 
 [tool.hatch.build.targets.wheel]
-packages = ["llm_streaming_service"]
+packages = [
+  "pdm_python",
+]
 only-packages = true

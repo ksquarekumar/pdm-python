@@ -1,12 +1,13 @@
 name: Tests
 
 on:
+  workflow_run:
+    workflows: ["Triage"]
+    types: [completed]
   workflow_dispatch:
   push:
     branches:
-      - main # The 'main' branch
-      - prod* # Any branch that starts with 'prod'
-      - dev* # Any branch that starts with 'dev'
+      - PROD
   pull_request:
     types: [opened, synchronize]
 
@@ -14,37 +15,53 @@ concurrency:
   group: python-precommit-${{ github.head_ref }}-1'
   cancel-in-progress: true
 
+permissions:
+  contents: write
+  pull-requests: write
+  statuses: write
+  repository-projects: write
+
 jobs:
+  triage:
+    uses: "./.github/workflows/triage.yml"
   pre-commit:
+    name: Tests
     runs-on: ubuntu-latest
-    if: "! (startsWith(github.ref_name, 'dependabot/') || startsWith(github.ref_name, 'Chore(deps)'))" # Ignore dependabot branches
+    if: "! (github.event.pull_request.draft || (startsWith(github.ref_name, 'dependabot/') || startsWith(github.ref_name, 'Chore(deps)')))"
     strategy:
       matrix:
-        python-version: [3.11]
-        session: [precommit, tests]
+        python-version: [3.12]
+        session: [lint, tests, container_tests]
 
     env:
       PYTHONUNBUFFERED: "1"
       PYTHONIOENCODING: "UTF-8"
+      PYTHONDONTWRITEBYTECODE: "1"
       PYTHON_VERSION: ${{ matrix.python-version }}
-
+      UV_VERSION: "0.4.20"
       FORCE_COLOR: "1"
       PRE_COMMIT_COLOR: "always"
+      APP_ENV: "dev"
+      DEBUG: "True"
+      LOG_LEVEL: "DEBUG"
       CI: "true"
+      PORT: "8000"
+      LOCAL_SERVICE_URL: "http://localhost:8000"
+      PRE_COMMIT_CACHE: ".pre-commit-cache"
 
     steps:
       - name: Set up QEMU
-        if: matrix.session == 'tests'
+        if: matrix.session == 'container_tests'
         id: setup-qemu
         uses: docker/setup-qemu-action@v3.2.0
 
       - name: Set up Docker Buildx
-        if: matrix.session == 'tests'
+        if: matrix.session == 'container_tests'
         id: setup-buildx
         uses: docker/setup-buildx-action@v3.6.1
 
       - name: Login to Docker Registry
-        if: matrix.session == 'tests'
+        if: matrix.session == 'container_tests'
         uses: docker/login-action@v3.3.0
         with:
           registry: ghcr.io
@@ -53,49 +70,32 @@ jobs:
 
       - name: Check out the repository
         id: checkout
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.2.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build docker-compose
-        if: matrix.session == 'tests'
-        env:
-          AWS_ACCESS_KEY_ID: "minio" # pragma: allowlist-secret
-          AWS_SECRET_ACCESS_KEY: "minio123" # pragma: allowlist-secret
-          DATA_WAREHOUSE_TYPE: "duckdb"
-          DUCKDB_DATABASE: "test_database.duckdb"
-          MYSQL_ROOT_HOST: "%" # pragma: allowlist-secret
-          MYSQL_ROOT_PASSWORD: "mysql" # pragma: allowlist-secret
-          MYSQL_USER: "mlflow" # pragma: allowlist-secret
-          MYSQL_PASSWORD: "mlflow" # pragma: allowlist-secret
-          MYSQL_DATABASE: "mlflow_database"
-          MLFLOW_S3_ENDPOINT_URL: "http://localhost:9000"
-          MLFLOW_TRACKING_URI: "http://localhost:5000"
-        run: docker buildx bake --file docker-compose.yml --file docker-compose-cache.json
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3.1.4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: |
+            .pre-commit-config.yaml
+            pyproject.toml
+            pdm.lock
+            requirements.txt
 
       - name: Setup Python
-        uses: actions/setup-python@v5.1.1
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
-
-      - run: |
-          python -m pip install --upgrade pip wheel setuptools python-build
-          python -m pip install --upgrade pipx
-          python -m pipx install virtualenv
-
-      - name: Set up PDM
-        uses: pdm-project/setup-pdm@v4.1
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: true
-          cache-dependency-path: |
-            ./pdm.lock
-            ./pdm.new.lock
+        run: |
+          uv python install ${{ env.PYTHON_VERSION }} --python-preference only-managed
+          uv tool install wheel
+          uv tool install python-build
+          make install-tools
 
       - name: Install dependencies
         run: |
-          pdm install -G:all --without=jupyter
+          uv sync --all-extras --dev
 
       - name: cache pre-commit
         id: cache-pre-commit
@@ -110,9 +110,22 @@ jobs:
         run: pdm run pre-commit install
 
       - name: Run Pre-commit
-        if: matrix.session == 'precommit'
-        run: pdm run nox -s ${{ matrix.session }}
+        if: matrix.session == 'lint'
+        run: pdm run ${{ matrix.session }}
 
       - name: Run Tests
         if: matrix.session == 'tests'
-        run: pdm run nox -s tests -- ./tests
+        run: pdm run ${{ matrix.session }}
+
+      - name: Run Container Tests
+        if: matrix.session == 'container_tests'
+        env:
+          PYTHON_VERSION: ${{ env.PYTHON_VERSION }}
+          UV_VERSION: ${{ env.UV_VERSION }}
+          LOG_LEVEL: ${{ env.LOG_LEVEL }}
+          PORT: ${{ env.PORT }}
+        run: |
+          mkdir -p ./credentials
+          cp .test.env .env
+          docker buildx bake --file docker-compose.yml --file docker-compose-cache.json
+          pdm run container_tests

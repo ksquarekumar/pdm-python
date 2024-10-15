@@ -3,17 +3,19 @@
 import os
 from pathlib import Path
 import shlex
+import shutil
 from textwrap import dedent
 import time
 
-from joblib import cpu_count
+import httpx
 import nox
 from nox import session
 from nox.sessions import Session
-import requests
 
 
-package: str = "pdm_python"
+os.environ.update({"PDM_IGNORE_ACTIVE_VENV": "0"})
+
+package: str = "storage_service"
 python_versions: list[str] = ["3.11"]
 
 PDM_ARGS: list[str] = ["pdm", "run"]
@@ -35,6 +37,7 @@ nox.options.sessions = (
     "precommit",
     "ochrona",
     "tests",
+    "container_tests",
     "coverage",
 )
 
@@ -158,7 +161,7 @@ def validate_path_posargs(*args: str, empty_allowed: bool = False) -> bool:
 @session(python=False)
 def black(session: Session) -> None:
     """Run black."""
-    args: list[str] = ["-t", "py311"]
+    args: list[str] = ["-t", "py312"]
 
     validate_path_posargs(*session.posargs, empty_allowed=False)
 
@@ -179,12 +182,17 @@ def ruff(session: Session) -> None:
 def mypy(session: Session) -> None:
     """Run mypy."""
     args: list[str] = [
-        "--show-error-codes",
-        "--pretty",
+        "--sqlite-cache",
+        "--config-file",
+        "pyproject.toml",
     ]
 
     validate_path_posargs(*session.posargs, empty_allowed=False)
     session.log(f"Received session.posargs: {session.posargs}")
+
+    if (PROJECT_ROOT_PATH / ".mypy_cache").exists():
+        session.log(".mypy_cache exists, removing...")
+        shutil.rmtree(PROJECT_ROOT_PATH / ".mypy_cache")
 
     for arg in session.posargs:
         temp_args: list[str] = []
@@ -193,11 +201,9 @@ def mypy(session: Session) -> None:
         )
         if parsed_path.is_dir():
             temp_args = [*args, arg]
-            session.run(
-                *PDM_ARGS, "mypy", *temp_args, env={"MYPYPATH": f"{PROJECT_ROOT_PATH}"}
-            )
+            session.run(*PDM_ARGS, "mypy", *temp_args)
         if parsed_path.is_file():
-            temp_args = [*args, "--explicit-package-bases", arg]
+            temp_args = [*args, arg]
             session.run(
                 *PDM_ARGS, "mypy", *temp_args, env={"MYPYPATH": str(parsed_path.parent)}
             )
@@ -276,6 +282,7 @@ def poll_local_service_for_readiness(
     request_timeout: int | None = None,
 ) -> None:
     """Poll ml-flow service for readiness."""
+    client = httpx.Client()
     counter, start = 0, time.time()
     max_startup_lag = max_startup_lag or float(
         os.getenv("LOCAL_SERVICE_MAX_STARTUP_LAG", "30.0")
@@ -292,17 +299,22 @@ def poll_local_service_for_readiness(
     while True:
         time.sleep(2**counter)
         try:
-            if (
-                requests.get(
-                    f"{local_service_url}/health",
-                    stream=True,
-                    verify=False,  # noqa: S501
-                    timeout=request_timeout,
-                ).status_code
-                == 200
-            ):
+            response = client.get(
+                url=f"{local_service_url}/health",
+                timeout=request_timeout,
+            )
+            if response.status_code == 200:
+                client.close()
                 return
-        except requests.exceptions.ConnectionError:
+            session.log(
+                f"Received status code {response.status_code} from {local_service_url}/health"
+            )
+            response.raise_for_status()
+        except httpx.ConnectError:
+            session.log("Retrying...")
+            pass
+        except Exception as e:
+            session.log(f"Received error: {e} from {local_service_url}/health")
             pass
         time_elapsed: float = float(time.time() - start)
         session.log(
@@ -314,48 +326,32 @@ def poll_local_service_for_readiness(
             session.log(error_message)
             session.error(error)
         counter += 1
+        client.close()
 
 
 @session(python=False)
-def tests(session: Session) -> None:
-    """Run the test suite."""
+def container_tests(session: Session) -> None:
+    """Run container tests."""
     from dotenv import dotenv_values
 
     env_args = {
         k: (v or "")
         for k, v in dotenv_values(
-            (Path.cwd() / ".test.env").resolve(), verbose=True
+            (Path.cwd() / ".env.cpy").resolve(), verbose=True
         ).items()
+    } | {
+        "DOCKER_BUILDKIT": "1",
+        "BUILDKIT_PROGRESS": "plain",
+        "BUILDX_EXPERIMENTAL": "1",
     }
 
-    validate_path_posargs(*session.posargs, empty_allowed=True)
-
-    docker_build_args: list[str] = ["docker", "compose", "build"]
     docker_up_args: list[str] = ["docker", "compose", "up", "-d"]
     docker_down_args: list[str] = ["docker", "compose", "down", "-v"]
-    args: list[str] = [
-        "run",
-        "--parallel",
-        "-m",
-        "pytest",
-        "--cache-clear",
-        "--randomly-seed=42",
-        "-n",
-        # should be fine as we are i/o bound
-        str(cpu_count() + 1),
-        "--dist",
-        # we run xdist in loadscope if individual tests within modules have shared session-scoped dependencies
-        # so we run tests with modules as parallel, assuming a shared & co-dependent session-scope exists at the module level at-least
-        "loadscope",
-    ]
     try:
-        session.run(*docker_build_args, env=env_args)
-        session.run(*docker_up_args, env=env_args)
+        session.run(*docker_up_args, *session.posargs, env=env_args)
         poll_local_service_for_readiness(
             session=session, local_service_url=env_args["LOCAL_SERVICE_URL"]
         )
-        # tests don't need env and should be self-contained
-        session.run(*PDM_ARGS, "coverage", *args, *session.posargs)
     except KeyError as err:
         error_message = f"Missing environment variable: {err} in env"
         session.log(error_message)
@@ -369,8 +365,23 @@ def tests(session: Session) -> None:
                 float("inf") if env_args.get("CI", "false") == "false" else 0.0
             ),
         )
-        if session.interactive:
-            session.notify("coverage", posargs=[])
+
+
+@session(python=False)
+def tests(session: Session) -> None:
+    """Run the test suite."""
+    args: list[str] = [
+        "run",
+        "--parallel",
+        "-m",
+        "pytest",
+        "--cache-clear",
+        "--randomly-seed=42",
+    ]
+    # tests don't need env and should be self-contained
+    session.run(*PDM_ARGS, "coverage", *args, *session.posargs)
+    if session.interactive:
+        session.notify("coverage", posargs=[])
 
 
 @session(python=False)

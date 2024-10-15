@@ -51,7 +51,7 @@ dependencies = [
   "uvloop>=0.20.0",
 ]
 
-[tool.pdm.dev-dependencies]
+[project.optional-dependencies]
 precommit = [
   "detect-secrets",
   "joblib",

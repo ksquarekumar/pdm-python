@@ -161,9 +161,6 @@ repos:
     rev: v1.7.3
   - hooks:
       - id: cspell
-        args:
-          - --config
-          - ./cspell.config.yaml
         require_serial: true
         pass_filenames: true
         verbose: true

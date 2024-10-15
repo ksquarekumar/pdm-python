@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Check out the repository
         id: checkout
-        uses: actions/checkout@v4.2.0
+        uses: actions/checkout@v4.2.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -51,7 +51,7 @@ jobs:
           scopes: |
             release
             hotfix
-            UW-\d+
+            [a-zA-Z]{2,3}-\d+
           disallowScopes: |
             [A-Z]+
           requireScope: true

@@ -301,7 +301,9 @@ def poll_local_service_for_readiness(
         try:
             response = client.get(
                 url=f"{local_service_url}/health",
+                headers={"Accept": "application/json"},
                 timeout=request_timeout,
+                follow_redirects=True,
             )
             if response.status_code == 200:
                 client.close()
@@ -312,10 +314,8 @@ def poll_local_service_for_readiness(
             response.raise_for_status()
         except httpx.ConnectError:
             session.log("Retrying...")
-            pass
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             session.log(f"Received error: {e} from {local_service_url}/health")
-            pass
         time_elapsed: float = float(time.time() - start)
         session.log(
             f"Waiting for LOCAL service to start (attempt #{counter+1}), time_elapsed: {time_elapsed:.2f}s",
@@ -337,13 +337,15 @@ def container_tests(session: Session) -> None:
     env_args = {
         k: (v or "")
         for k, v in dotenv_values(
-            (Path.cwd() / ".env.cpy").resolve(), verbose=True
+            (Path.cwd() / ".test.env").resolve(), verbose=True
         ).items()
     } | {
         "DOCKER_BUILDKIT": "1",
         "BUILDKIT_PROGRESS": "plain",
         "BUILDX_EXPERIMENTAL": "1",
     }
+
+    session.log(f"env_args: {env_args.keys()}")
 
     docker_up_args: list[str] = ["docker", "compose", "up", "-d"]
     docker_down_args: list[str] = ["docker", "compose", "down", "-v"]

@@ -99,7 +99,7 @@ jobs:
 
       - name: cache pre-commit
         id: cache-pre-commit
-        uses: actions/cache@v4.0.2
+        uses: actions/cache@v4.1.2
         with:
           path: ~/.cache/pre-commit/
           key: pre-commit-|${{ env.PYTHON_VERSION }}|${{ hashFiles('.pre-commit-config.yaml') }}
